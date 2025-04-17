@@ -92,7 +92,7 @@ export default function PreviewArea({
   return (
     <div
       ref={drop}
-      className={`flex-1 h-full overflow-hidden ${isOver ? 'bg-blue-100' : 'bg-white'}`}
+      className={`flex-1 h-full overflow-hidden ${isOver ? 'bg-yellow-100' : 'bg-yellow-50'}`}
     >
       <div
         ref={previewRef}

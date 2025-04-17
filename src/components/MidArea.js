@@ -1,5 +1,11 @@
 import React, { useState } from 'react';
 import { useDrop, useDrag } from 'react-dnd';
+import RobotSprite from './RobotSprite';
+import DogSprite from './DogSprite';
+import AlienSprite from './AlienSprite';
+import CatSprite from './CatSprite';
+import BearSprite from './BearSprite';
+import BallSprite from './BallSprite';
 
 const getBlockColor = (type) => {
   switch (type) {
@@ -223,7 +229,7 @@ const BlockDisplay = ({ block, onUpdate, spriteId, index, moveBlock }) => {
   );
 };
 
-export default function MidArea({ spriteId, blocks, setBlocks }) {
+export default function MidArea({ spriteId, blocks, setBlocks, selectedSpriteType }) {
   const [{ isOver }, drop] = useDrop(() => ({
     accept: 'block',
     drop: (item) => {
@@ -250,11 +256,48 @@ export default function MidArea({ spriteId, blocks, setBlocks }) {
     });
   };
 
+  const renderSelectedSprite = () => {
+    if (!selectedSpriteType) return null;
+
+    const spriteProps = {
+      x: 0,
+      y: 0,
+      rotation: 0,
+      scale: 1.5,
+      isSelected: false
+    };
+
+    switch (selectedSpriteType) {
+      case 'robot':
+        return <RobotSprite {...spriteProps} />;
+      case 'dog':
+        return <DogSprite {...spriteProps} />;
+      case 'alien':
+        return <AlienSprite {...spriteProps} />;
+      case 'cat':
+        return <CatSprite {...spriteProps} />;
+      case 'bear':
+        return <BearSprite {...spriteProps} />;
+      case 'ball':
+        return <BallSprite {...spriteProps} />;
+      default:
+        return null;
+    }
+  };
+
   return (
     <div
       ref={drop}
-      className={`flex-1 p-4 overflow-y-auto ${isOver ? 'bg-gray-100' : ''}`}
+      className={`flex-1 p-4 overflow-y-auto relative ${isOver ? 'bg-gray-100' : ''}`}
     >
+      {/* Transparent sprite indicator */}
+      {selectedSpriteType && (
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 opacity-40 pointer-events-none z-10">
+          {renderSelectedSprite()}
+        </div>
+      )}
+
+      {/* Existing blocks */}
       {(blocks[spriteId] || []).map((block, index) => (
         <BlockDisplay
           key={`${block.type}-${index}`}

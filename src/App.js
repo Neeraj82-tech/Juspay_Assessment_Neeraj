@@ -21,6 +21,7 @@ export default function App() {
   const [pressedKeys, setPressedKeys] = useState(new Set());
   const [flagClicked, setFlagClicked] = useState(false);
   const [clickedSpriteId, setClickedSpriteId] = useState(null);
+  const [selectedSpriteType, setSelectedSpriteType] = useState('cat');
 
   // Add ref to track current block values
   const currentBlockValues = useRef({});
@@ -29,6 +30,14 @@ export default function App() {
   useEffect(() => {
     currentBlockValues.current = blocks;
   }, [blocks]);
+
+  // Update selectedSpriteType when activeSprite changes
+  useEffect(() => {
+    const activeSpriteData = sprites.find(sprite => sprite.id === activeSprite);
+    if (activeSpriteData) {
+      setSelectedSpriteType(activeSpriteData.type);
+    }
+  }, [activeSprite, sprites]);
 
   // Handle key press events
   useEffect(() => {
@@ -93,6 +102,7 @@ export default function App() {
     }));
     setNextId((prevId) => prevId + 1);
     setShowSpriteSelector(false);
+    setSelectedSpriteType(spriteType);
   };
 
   const checkCollision = (sprite1, sprite2) => {
@@ -508,6 +518,7 @@ export default function App() {
                 spriteId={activeSprite}
                 blocks={blocks}
                 setBlocks={setBlocks}
+                selectedSpriteType={selectedSpriteType}
               />
             </div>
           </div>

@@ -1,50 +1,37 @@
-import React, { memo } from 'react';
+import React from "react";
 
-const RobotSprite = memo(({ x = 0, y = 0, rotation = 0 }) => {
+const RobotSprite = ({ x, y, rotation, scale, isSelected }) => {
     return (
         <div
-            className="absolute"
+            className={`absolute transition-all duration-300 ${isSelected ? "ring-2 ring-blue-500" : ""
+                }`}
             style={{
-                transform: `translate(${x}px, ${y}px) rotate(${rotation}deg)`,
-                transformOrigin: 'center',
-                zIndex: 100,
-                width: '70px',
-                height: '90px',
+                transform: `translate(${x}px, ${y}px) rotate(${rotation}deg) scale(${scale})`,
+                width: "70px",
+                height: "90px",
             }}
         >
             <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 70 90"
                 width="70"
                 height="90"
-                version="1.1"
+                viewBox="0 0 70 90"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
             >
-                <g stroke="#000" strokeWidth="1.2" fillRule="evenodd">
-                    {/* Body - Gray rectangle */}
-                    <rect x="15" y="30" width="40" height="45" fill="#b0b0b0" rx="5" ry="5" />
-
-                    {/* Head - Darker gray circle */}
-                    <circle cx="35" cy="20" r="15" fill="#808080" />
-
-                    {/* Eyes - Yellow rectangles */}
-                    <rect x="25" y="15" width="8" height="10" fill="#ffff00" />
-                    <rect x="37" y="15" width="8" height="10" fill="#ffff00" />
-
-                    {/* Antenna */}
-                    <line x1="35" y1="5" x2="35" y2="0" strokeWidth="1.5" />
-                    <circle cx="35" cy="-2" r="3" fill="#ff0000" />
-
-                    {/* Arms - Gray rectangles */}
-                    <rect x="5" y="35" width="10" height="25" fill="#808080" rx="3" ry="3" />
-                    <rect x="55" y="35" width="10" height="25" fill="#808080" rx="3" ry="3" />
-
-                    {/* Legs - Gray rectangles */}
-                    <rect x="20" y="75" width="10" height="15" fill="#808080" rx="3" ry="3" />
-                    <rect x="40" y="75" width="10" height="15" fill="#808080" rx="3" ry="3" />
+                <g transform="translate(35, 45)">
+                    <rect x="-20" y="-30" width="40" height="60" fill="#9E9E9E" />
+                    <rect x="-15" y="-35" width="30" height="20" fill="#757575" />
+                    <circle cx="-8" cy="-25" r="4" fill="#FFD700" />
+                    <circle cx="8" cy="-25" r="4" fill="#FFD700" />
+                    <rect x="-5" y="-5" width="10" height="15" fill="#616161" />
+                    <rect x="-25" y="-20" width="10" height="20" fill="#757575" />
+                    <rect x="15" y="-20" width="10" height="20" fill="#757575" />
+                    <rect x="-25" y="20" width="10" height="15" fill="#757575" />
+                    <rect x="15" y="20" width="10" height="15" fill="#757575" />
                 </g>
             </svg>
         </div>
     );
-});
+};
 
 export default RobotSprite; 
