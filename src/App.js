@@ -62,113 +62,70 @@ export default function App() {
     };
   }, []);
 
-  // Handle sprite click events
-  const handleSpriteClick = useCallback((spriteId) => {
-    setClickedSpriteId(spriteId);
-    // Reset after a short delay
-    setTimeout(() => setClickedSpriteId(null), 100);
-  }, []);
-
-  // Handle flag click
-  const handleFlagClick = useCallback(() => {
-    setFlagClicked(true);
-    // Reset after a short delay
-    setTimeout(() => setFlagClicked(false), 100);
-  }, []);
-
-  const addSprite = () => {
-    setShowSpriteSelector(true);
-  };
-
-  const handleSpriteSelect = (spriteType) => {
-    const newId = nextId;
-    const newSprite = {
-      id: newId,
-      x: 0,
-      y: 0,
-      type: spriteType,
-      dx: 1,
-      dy: 0,
-      rotation: 0,
-      visible: true,
-      size: 100,
-    };
-
-    setSprites((prev) => [...prev, newSprite]);
-    setActiveSprite(newId);
-    setBlocks((prev) => ({
-      ...prev,
-      [newId]: [],
-    }));
-    setNextId((prevId) => prevId + 1);
-    setShowSpriteSelector(false);
-    setSelectedSpriteType(spriteType);
-  };
-
-  const checkCollision = (sprite1, sprite2) => {
-    const sprite1Width = 50;
-    const sprite1Height = 50;
-    const sprite2Width = 50;
-    const sprite2Height = 50;
-
-    return (
-      sprite1.x < sprite2.x + sprite2Width &&
-      sprite1.x + sprite1Width > sprite2.x &&
-      sprite1.y < sprite2.y + sprite2Height &&
-      sprite1.y + sprite1Height > sprite2.y
-    );
-  };
-
   const executeBlock = useCallback(
     async (block, sprite, sprites, setSprites, currentBlockIndex, setCurrentBlockIndex, onComplete) => {
       console.log(`[DEBUG] Executing block ${block.type} for sprite ${sprite.id}`);
 
+      // Check if this block is part of an event sequence
+      const isInEventSequence = () => {
+        const spriteBlocks = blocks[sprite.id] || [];
+        for (let i = 0; i < currentBlockIndex; i++) {
+          if (spriteBlocks[i].type === 'WHEN_FLAG_CLICKED' || spriteBlocks[i].type === 'WHEN_SPRITE_CLICKED') {
+            return true;
+          }
+        }
+        return false;
+      };
+
       switch (block.type) {
         case 'MOVE':
-          setSprites((prevSprites) => {
-            let updatedSprites = prevSprites.map((s) => {
-              if (s.id === sprite.id) {
-                const currentBlocks = currentBlockValues.current[sprite.id] || [];
-                const currentMoveBlock = currentBlocks.find((b) => b.type === 'MOVE');
-                const moveValue = currentMoveBlock ? currentMoveBlock.value : block.value ?? 10;
-                const dx = s.dx ?? 1;
-                const dy = s.dy ?? 0;
-                const newX = s.x + dx * moveValue;
-                const newY = s.y + dy * moveValue;
-                return { ...s, x: newX, y: newY };
-              }
-              return s;
-            });
+          // Only execute if not in an event sequence or if the event was triggered
+          if (!isInEventSequence() || flagClicked || clickedSpriteId === sprite.id) {
+            setSprites((prevSprites) => {
+              let updatedSprites = prevSprites.map((s) => {
+                if (s.id === sprite.id) {
+                  const currentBlocks = currentBlockValues.current[sprite.id] || [];
+                  const currentMoveBlock = currentBlocks.find((b) => b.type === 'MOVE');
+                  const moveValue = currentMoveBlock ? currentMoveBlock.value : block.value ?? 10;
+                  const dx = s.dx ?? 1;
+                  const dy = s.dy ?? 0;
+                  const newX = s.x + dx * moveValue;
+                  const newY = s.y + dy * moveValue;
+                  return { ...s, x: newX, y: newY };
+                }
+                return s;
+              });
 
-            for (let i = 0; i < updatedSprites.length; i++) {
-              for (let j = i + 1; j < updatedSprites.length; j++) {
-                const spriteA = updatedSprites[i];
-                const spriteB = updatedSprites[j];
-                if (checkCollision(spriteA, spriteB)) {
-                  const dx = spriteA.x - spriteB.x;
-                  const dy = spriteA.y - spriteB.y;
-                  const distance = Math.sqrt(dx * dx + dy * dy) || 1;
-                  const separation = 10;
+              for (let i = 0; i < updatedSprites.length; i++) {
+                for (let j = i + 1; j < updatedSprites.length; j++) {
+                  const spriteA = updatedSprites[i];
+                  const spriteB = updatedSprites[j];
+                  if (checkCollision(spriteA, spriteB)) {
+                    const dx = spriteA.x - spriteB.x;
+                    const dy = spriteA.y - spriteB.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy) || 1;
+                    const separation = 10;
 
-                  updatedSprites[i] = {
-                    ...spriteA,
-                    dx: -(spriteA.dx ?? 1),
-                    dy: -(spriteA.dy ?? 0),
-                    x: spriteA.x + (separation * dx) / distance,
-                    y: spriteA.y + (separation * dy) / distance,
-                  };
-                  updatedSprites[j] = {
-                    ...spriteB,
-                    dx: -(spriteB.dx ?? 1),
-                    dy: -(spriteB.dy ?? 0),
-                    x: spriteB.x - (separation * dx) / distance,
-                    y: spriteB.y - (separation * dy) / distance,
-                  };
+                    updatedSprites[i] = {
+                      ...spriteA,
+                      dx: -(spriteA.dx ?? 1),
+                      dy: -(spriteA.dy ?? 0),
+                      x: spriteA.x + (separation * dx) / distance,
+                      y: spriteA.y + (separation * dy) / distance,
+                    };
+                    updatedSprites[j] = {
+                      ...spriteB,
+                      dx: -(spriteB.dx ?? 1),
+                      dy: -(spriteB.dy ?? 0),
+                      x: spriteB.x - (separation * dx) / distance,
+                      y: spriteB.y - (separation * dy) / distance,
+                    };
+                  }
                 }
               }
-            }
-            return updatedSprites;
-          });
+              return updatedSprites;
+            });
+          }
           break;
         case 'TURN':
           setSprites((prevSprites) => {
@@ -206,17 +163,17 @@ export default function App() {
           });
           break;
         case 'SAY':
-          setSprites((prevSprites) => {
-            return prevSprites.map((s) => {
-              if (s.id === sprite.id) {
-                const currentBlocks = currentBlockValues.current[sprite.id] || [];
-                const currentSayBlock = currentBlocks.find((b) => b.type === 'SAY');
-                const message = currentSayBlock ? currentSayBlock.value : block.value || 'Hello!';
-                return { ...s, message, messageType: 'say' };
-              }
-              return s;
+          // Only execute if not in an event sequence or if the event was triggered
+          if (!isInEventSequence() || flagClicked || clickedSpriteId === sprite.id) {
+            setSprites((prevSprites) => {
+              return prevSprites.map((s) => {
+                if (s.id === sprite.id) {
+                  return { ...s, message: block.value || 'Hello!', messageType: 'say' };
+                }
+                return s;
+              });
             });
-          });
+          }
           break;
         case 'THINK':
           setSprites((prevSprites) => {
@@ -391,11 +348,13 @@ export default function App() {
           return;
         case 'WHEN_FLAG_CLICKED':
           if (flagClicked) {
+            console.log(`[DEBUG] Flag clicked event triggered for sprite ${sprite.id}`);
             if (onComplete) onComplete();
           }
           return;
         case 'WHEN_SPRITE_CLICKED':
           if (clickedSpriteId === sprite.id) {
+            console.log(`[DEBUG] Sprite clicked event triggered for sprite ${sprite.id}`);
             if (onComplete) onComplete();
           }
           return;
@@ -416,8 +375,74 @@ export default function App() {
         setAnimationTimeout(timeout);
       }
     },
-    [flagClicked, clickedSpriteId, pressedKeys]
+    [flagClicked, clickedSpriteId, pressedKeys, blocks]
   );
+
+  // Handle sprite click events
+  const handleSpriteClick = useCallback((spriteId) => {
+    console.log(`[DEBUG] Sprite ${spriteId} clicked`);
+    setClickedSpriteId(spriteId);
+    // Dispatch a custom event to notify waiting blocks
+    window.dispatchEvent(new CustomEvent('spriteClicked', { detail: { spriteId } }));
+    // Reset after a short delay
+    setTimeout(() => {
+      console.log(`[DEBUG] Resetting clicked sprite ${spriteId}`);
+      setClickedSpriteId(null);
+    }, 500);
+  }, []);
+
+  // Handle flag click
+  const handleFlagClick = useCallback(() => {
+    setFlagClicked(true);
+    console.log('[DEBUG] Flag clicked, executing blocks...');
+    // Dispatch a custom event to notify waiting blocks
+    window.dispatchEvent(new CustomEvent('flagClicked'));
+    // Reset after a short delay
+    setTimeout(() => setFlagClicked(false), 500);
+  }, []);
+
+  const addSprite = () => {
+    setShowSpriteSelector(true);
+  };
+
+  const handleSpriteSelect = (spriteType) => {
+    const newId = nextId;
+    const newSprite = {
+      id: newId,
+      x: 0,
+      y: 0,
+      type: spriteType,
+      dx: 1,
+      dy: 0,
+      rotation: 0,
+      visible: true,
+      size: 100,
+    };
+
+    setSprites((prev) => [...prev, newSprite]);
+    setActiveSprite(newId);
+    setBlocks((prev) => ({
+      ...prev,
+      [newId]: [],
+    }));
+    setNextId((prevId) => prevId + 1);
+    setShowSpriteSelector(false);
+    setSelectedSpriteType(spriteType);
+  };
+
+  const checkCollision = (sprite1, sprite2) => {
+    const sprite1Width = 50;
+    const sprite1Height = 50;
+    const sprite2Width = 50;
+    const sprite2Height = 50;
+
+    return (
+      sprite1.x < sprite2.x + sprite2Width &&
+      sprite1.x + sprite1Width > sprite2.x &&
+      sprite1.y < sprite2.y + sprite2Height &&
+      sprite1.y + sprite1Height > sprite2.y
+    );
+  };
 
   const playAnimations = useCallback(() => {
     if (isPlaying) return;
@@ -448,6 +473,38 @@ export default function App() {
       }
 
       const block = blocks[spriteId][blockIndex];
+
+      // If we encounter a flag block, wait for flag click
+      if (block.type === 'WHEN_FLAG_CLICKED') {
+        console.log(`[DEBUG] Waiting for flag click at block ${blockIndex}`);
+        // Set up a one-time flag click handler
+        const flagClickHandler = () => {
+          console.log(`[DEBUG] Flag clicked, continuing execution from block ${blockIndex + 1}`);
+          // Remove the handler after it's used
+          window.removeEventListener('flagClicked', flagClickHandler);
+          // Execute the next block after flag click
+          executeNextBlock(spriteId, blockIndex + 1);
+        };
+        window.addEventListener('flagClicked', flagClickHandler);
+        return;
+      }
+
+      // If we encounter a sprite click block, wait for sprite click
+      if (block.type === 'WHEN_SPRITE_CLICKED') {
+        console.log(`[DEBUG] Waiting for sprite click at block ${blockIndex}`);
+        // Set up a one-time sprite click handler
+        const spriteClickHandler = (event) => {
+          if (event.detail.spriteId === spriteId) {
+            console.log(`[DEBUG] Sprite clicked, continuing execution from block ${blockIndex + 1}`);
+            // Remove the handler after it's used
+            window.removeEventListener('spriteClicked', spriteClickHandler);
+            // Execute the next block after sprite click
+            executeNextBlock(spriteId, blockIndex + 1);
+          }
+        };
+        window.addEventListener('spriteClicked', spriteClickHandler);
+        return;
+      }
 
       executeBlock(
         block,
@@ -506,13 +563,21 @@ export default function App() {
               onRemoveBlock={handleRemoveBlock}
             />
             <div className="flex flex-col flex-1">
-              <button
-                onClick={playAnimations}
-                className="p-2 bg-green-500 text-white rounded m-2 self-start"
-                disabled={isPlaying}
-              >
-                {isPlaying ? 'Playing...' : 'Play'}
-              </button>
+              <div className="flex gap-2 p-2">
+                <button
+                  onClick={playAnimations}
+                  className="p-2 bg-green-500 text-white rounded m-2 self-start hover:bg-green-600 transition-colors"
+                  disabled={isPlaying}
+                >
+                  {isPlaying ? 'Playing...' : 'Play'}
+                </button>
+                <button
+                  onClick={handleFlagClick}
+                  className="p-2 bg-yellow-500 text-white rounded m-2 self-start hover:bg-yellow-600 transition-colors"
+                >
+                  <Icon name="flag" size={20} />
+                </button>
+              </div>
               <MidArea
                 key={activeSprite}
                 spriteId={activeSprite}

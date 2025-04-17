@@ -76,7 +76,10 @@ export default function PreviewArea({
 
   const handleSpriteClick = useCallback((spriteId) => {
     setActiveSprite(spriteId);
-  }, [setActiveSprite]);
+    if (onSpriteClick) {
+      onSpriteClick(spriteId);
+    }
+  }, [setActiveSprite, onSpriteClick]);
 
   const moveSprite = useCallback((id, absX, absY) => {
     const relX = absX - center.x;

@@ -49,7 +49,6 @@ const CATEGORIES = [
     blocks: [
       { type: 'WHEN_FLAG_CLICKED', label: 'When flag clicked', icon: <Icon name="flag" size={14} className="text-yellow-600" /> },
       { type: 'WHEN_SPRITE_CLICKED', label: 'When this sprite clicked', icon: <Icon name="mouse" size={14} className="text-yellow-600" /> },
-      { type: 'WHEN_KEY_PRESSED', label: 'When space key pressed', icon: <Icon name="keyboard" size={14} className="text-yellow-600" />, value: 'space' },
     ],
   },
   {
