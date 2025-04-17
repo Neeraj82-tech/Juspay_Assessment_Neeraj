@@ -7,6 +7,7 @@
     "build": "webpack --config webpack.prod.js"
   },
   "dependencies": {
+    "@heroicons/react": "^2.2.0",
     "react": "^17.0.2",
     "react-dnd": "^14.0.5",
     "react-dnd-html5-backend": "^14.0.2",
