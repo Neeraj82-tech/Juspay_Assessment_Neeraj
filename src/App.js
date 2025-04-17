@@ -548,7 +548,17 @@ export default function App() {
       }
       return newBlocks;
     });
-  }, []);
+
+    // Reset playing state if all blocks are removed
+    const hasBlocks = Object.values(blocks).some(spriteBlocks => spriteBlocks.length > 0);
+    if (!hasBlocks) {
+      setIsPlaying(false);
+      if (animationTimeout) {
+        clearTimeout(animationTimeout);
+        setAnimationTimeout(null);
+      }
+    }
+  }, [blocks, animationTimeout]);
 
   return (
     <DndProvider backend={HTML5Backend}>

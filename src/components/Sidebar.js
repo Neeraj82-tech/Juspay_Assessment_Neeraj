@@ -90,12 +90,13 @@ const Block = ({ block, categoryColor }) => {
   return (
     <div
       ref={drag}
-      className={`flex items-center gap-2 px-3 py-2 rounded-md cursor-grab bg-white hover:bg-opacity-90 shadow-sm hover:shadow-md transform transition-all duration-150 hover:-translate-y-0.5 ${isDragging ? "opacity-50 scale-95" : "opacity-100"
+      draggable="true"
+      className={`flex items-center gap-2 px-3 py-1.5 rounded-xl cursor-grab bg-white hover:bg-opacity-90 shadow-sm hover:shadow-md transform transition-all duration-150 hover:-translate-y-0.5 ${isDragging ? "opacity-50 scale-95" : "opacity-100"
         }`}
       style={{ backgroundColor: `${getBlockColor(block.type)}20` }}
     >
       <span className="flex-shrink-0">{block.icon}</span>
-      <span className="text-sm font-medium text-gray-800">{block.label}</span>
+      <span className="text-sm font-medium text-gray-800 truncate">{block.label}</span>
     </div>
   );
 };
@@ -130,9 +131,10 @@ export default function Sidebar({ addSprite, sprites, activeSprite, setActiveSpr
       setSelectedCategory(categoryName);
       if (buttonRef.current) {
         const rect = buttonRef.current.getBoundingClientRect();
+        const containerRect = buttonRef.current.closest('.categories-container').getBoundingClientRect();
         setPopupPosition({
-          top: rect.top + rect.height / 2 + window.scrollY - 24, // Center vertically with the icon
-          left: rect.right + 4, // Tight adjacency to the icon
+          top: rect.top - containerRect.top,
+          left: rect.right - containerRect.left + 10
         });
       }
     }
@@ -141,6 +143,11 @@ export default function Sidebar({ addSprite, sprites, activeSprite, setActiveSpr
   // Close popup when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
+      // Don't close if clicking on a draggable block
+      if (event.target.closest('[draggable="true"]')) {
+        return;
+      }
+
       if (
         selectedCategory &&
         !Object.values(buttonRefs.current).some((ref) => ref?.contains(event.target)) &&
@@ -197,7 +204,7 @@ export default function Sidebar({ addSprite, sprites, activeSprite, setActiveSpr
           <div key={cat.name} className="relative">
             <button
               ref={(el) => (buttonRefs.current[cat.name] = el)}
-              className={`group relative flex items-center justify-center w-14 h-14 rounded-full shadow-md border-2 transition-all duration-300 ${cat.color
+              className={`group relative flex items-center justify-center w-12 h-12 rounded-full shadow-md border-2 transition-all duration-300 ${cat.color
                 } ${selectedCategory === cat.name
                   ? "border-gray-700 scale-110 ring-2 ring-gray-700/20"
                   : "border-transparent hover:scale-105"
@@ -210,11 +217,8 @@ export default function Sidebar({ addSprite, sprites, activeSprite, setActiveSpr
               </span>
             </button>
             {selectedCategory === cat.name && (
-              <div
-                className="blocks-popup absolute z-10 w-56 bg-white rounded-lg shadow-xl border border-gray-100 animate-fadeIn"
-                style={{ top: popupPosition.top, left: popupPosition.left }}
-              >
-                <div className={`text-sm font-semibold px-4 pt-3 pb-2 ${cat.textColor} border-b border-gray-100 bg-gradient-to-r from-white to-gray-50`}>
+              <div className="blocks-popup absolute left-14 top-0 z-50 w-44 bg-white rounded-2xl shadow-lg border border-gray-200 animate-fadeIn overflow-hidden">
+                <div className={`text-sm font-semibold px-4 py-2.5 ${cat.textColor} border-b border-gray-100 bg-gradient-to-r from-white to-gray-50`}>
                   {cat.name}
                 </div>
                 <div className="px-3 py-2 space-y-1.5 bg-gradient-to-b from-white to-gray-50">
