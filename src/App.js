@@ -5,6 +5,7 @@ import Sidebar from './components/Sidebar';
 import MidArea from './components/MidArea';
 import PreviewArea from './components/PreviewArea';
 import SpriteSelector from './components/SpriteSelector';
+import Icon from './components/Icon';
 
 export default function App() {
   const [nextId, setNextId] = useState(2); // Start from 2 since initial sprite is 1
@@ -17,6 +18,9 @@ export default function App() {
   const [animationTimeout, setAnimationTimeout] = useState(null);
   const [completedSprites, setCompletedSprites] = useState(new Set());
   const [showSpriteSelector, setShowSpriteSelector] = useState(false);
+  const [pressedKeys, setPressedKeys] = useState(new Set());
+  const [flagClicked, setFlagClicked] = useState(false);
+  const [clickedSpriteId, setClickedSpriteId] = useState(null);
 
   // Add ref to track current block values
   const currentBlockValues = useRef({});
@@ -25,6 +29,43 @@ export default function App() {
   useEffect(() => {
     currentBlockValues.current = blocks;
   }, [blocks]);
+
+  // Handle key press events
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      setPressedKeys(prev => new Set([...prev, e.key.toLowerCase()]));
+    };
+
+    const handleKeyUp = (e) => {
+      setPressedKeys(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(e.key.toLowerCase());
+        return newSet;
+      });
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
+  }, []);
+
+  // Handle sprite click events
+  const handleSpriteClick = useCallback((spriteId) => {
+    setClickedSpriteId(spriteId);
+    // Reset after a short delay
+    setTimeout(() => setClickedSpriteId(null), 100);
+  }, []);
+
+  // Handle flag click
+  const handleFlagClick = useCallback(() => {
+    setFlagClicked(true);
+    // Reset after a short delay
+    setTimeout(() => setFlagClicked(false), 100);
+  }, []);
 
   const addSprite = () => {
     setShowSpriteSelector(true);
@@ -291,7 +332,7 @@ export default function App() {
           const executeRepeatBlock = async () => {
             if (repeatIndex < repeatValue) {
               console.log(`Repeat iteration ${repeatIndex + 1} of ${repeatValue}`);
-              const childBlocks = blocks[sprite.id] || [];
+              const childBlocks = blocks[sprite.id]?.slice(currentBlockIndex + 1) || [];
               let childIndex = 0;
 
               const executeNextChildBlock = async () => {
@@ -309,9 +350,9 @@ export default function App() {
                       sprite,
                       sprites,
                       setSprites,
-                      childIndex,
+                      currentBlockIndex + childIndex + 1,
                       (newIndex) => {
-                        childIndex = newIndex;
+                        childIndex = newIndex - (currentBlockIndex + 1);
                       },
                       () => {
                         childIndex++;
@@ -339,10 +380,19 @@ export default function App() {
           await executeRepeatBlock();
           return;
         case 'WHEN_FLAG_CLICKED':
+          if (flagClicked) {
+            if (onComplete) onComplete();
+          }
+          return;
         case 'WHEN_SPRITE_CLICKED':
+          if (clickedSpriteId === sprite.id) {
+            if (onComplete) onComplete();
+          }
+          return;
         case 'WHEN_KEY_PRESSED':
-          // These are event triggers; for now, assume they trigger on play
-          if (onComplete) onComplete();
+          if (pressedKeys.has(block.value?.toLowerCase() || 'space')) {
+            if (onComplete) onComplete();
+          }
           return;
         default:
           console.log(`[DEBUG] Unhandled block type: ${block.type}`);
@@ -356,7 +406,7 @@ export default function App() {
         setAnimationTimeout(timeout);
       }
     },
-    [blocks]
+    [flagClicked, clickedSpriteId, pressedKeys]
   );
 
   const playAnimations = useCallback(() => {
@@ -419,15 +469,19 @@ export default function App() {
     });
   }, [sprites, blocks, executeBlock, isPlaying, animationTimeout]);
 
-  const handleRemoveBlock = useCallback(
-    (blockId) => {
-      setBlocks((prev) => ({
-        ...prev,
-        [activeSprite]: prev[activeSprite]?.filter((block) => block.id !== blockId) || [],
-      }));
-    },
-    [activeSprite]
-  );
+  const handleRemoveBlock = useCallback((block) => {
+    if (!block || !block.spriteId) return;
+
+    setBlocks((prev) => {
+      const newBlocks = { ...prev };
+      if (newBlocks[block.spriteId]) {
+        newBlocks[block.spriteId] = newBlocks[block.spriteId].filter(
+          (_, index) => index !== block.index
+        );
+      }
+      return newBlocks;
+    });
+  }, []);
 
   return (
     <DndProvider backend={HTML5Backend}>
@@ -464,6 +518,7 @@ export default function App() {
               blocks={blocks}
               setBlocks={setBlocks}
               setActiveSprite={setActiveSprite}
+              onSpriteClick={handleSpriteClick}
             />
           </div>
         </div>

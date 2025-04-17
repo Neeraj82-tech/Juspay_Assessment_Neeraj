@@ -21,7 +21,14 @@ const SPRITE_DIMENSIONS = {
   height: 100,
 };
 
-export default function PreviewArea({ sprites = [], setSprites, blocks, setBlocks, setActiveSprite }) {
+export default function PreviewArea({
+  sprites,
+  setSprites,
+  blocks,
+  setBlocks,
+  setActiveSprite,
+  onSpriteClick
+}) {
   const previewRef = useRef(null);
   const [center, setCenter] = useState({ x: 0, y: 0 });
 

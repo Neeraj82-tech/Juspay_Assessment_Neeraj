@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import Icon from "./Icon";
-import { useDrag } from "react-dnd";
+import { useDrag, useDrop } from "react-dnd";
 
 const getBlockColor = (type) => {
   switch (type) {
@@ -9,7 +9,7 @@ const getBlockColor = (type) => {
     case 'GOTO':
       return '#4A90E2'; // Blue
     case 'REPEAT':
-      return '#D0021B'; // Red
+      return '#4A90E2'; // Blue
     case 'SAY':
     case 'THINK':
     case 'SHOW':
@@ -17,10 +17,9 @@ const getBlockColor = (type) => {
     case 'SIZE':
       return '#4CAF50'; // Green
     case 'WAIT':
-    case 'IF':
     case 'FOREVER':
-    case 'STOP':
-      return '#FF9800'; // Orange
+    case 'DELETE_CLONE':
+      return '#FF5722'; // Deep Orange
     case 'WHEN_FLAG_CLICKED':
     case 'WHEN_SPRITE_CLICKED':
     case 'WHEN_KEY_PRESSED':
@@ -39,8 +38,7 @@ const CATEGORIES = [
     blocks: [
       { type: 'MOVE', label: 'Move 10 steps', icon: <Icon name="arrow-right" size={14} className="text-blue-600" />, value: 10 },
       { type: 'TURN', label: 'Turn 15 degrees', icon: <Icon name="rotate-right" size={14} className="text-blue-600" />, value: 15 },
-      { type: 'GOTO', label: 'Go to x: 0 y: 0', icon: <Icon name="target" size={14} className="text-blue-600" />, value: { x: 0, y: 0 } },
-      { type: 'REPEAT', label: 'Repeat 10', icon: <Icon name="repeat" size={14} className="text-blue-600" />, value: 10 },
+      { type: 'GOTO', label: 'Go to x: 0 y: 0', icon: <Icon name="arrow-up-on-square" size={14} className="text-blue-600" />, value: { x: 0, y: 0 } },
     ],
   },
   {
@@ -69,13 +67,14 @@ const CATEGORIES = [
   },
   {
     name: 'Control',
-    color: 'bg-gradient-to-br from-orange-500 to-orange-600',
+    color: 'bg-gradient-to-br from-orange-400 to-orange-500',
     textColor: 'text-orange-600',
-    icon: <Icon name="repeat" size={20} className="text-white" />,
+    icon: <Icon name="repeat" size={20} className="text-red-500" />,
     blocks: [
-      { type: 'WAIT', label: 'Wait 1 seconds', icon: <Icon name="clock" size={14} className="text-orange-600" />, value: 1 },
-      { type: 'FOREVER', label: 'Forever', icon: <Icon name="infinity" size={14} className="text-orange-600" /> },
-      { type: 'DELETE_CLONE', label: 'Delete this clone', icon: <Icon name="trash" size={14} className="text-orange-600" /> },
+      { type: 'REPEAT', label: 'Repeat 10', icon: <Icon name="repeat" size={14} className="text-red-500" />, value: 10 },
+      { type: 'WAIT', label: 'Wait 1 seconds', icon: <Icon name="clock" size={14} className="text-red-500" />, value: 1 },
+      { type: 'FOREVER', label: 'Forever', icon: <Icon name="infinity" size={14} className="text-white" /> },
+      { type: 'DELETE_CLONE', label: 'Delete this clone', icon: <Icon name="trash" size={14} className="text-red-500" /> },
     ],
   },
 ];
@@ -106,6 +105,18 @@ export default function Sidebar({ addSprite, sprites, activeSprite, setActiveSpr
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [popupPosition, setPopupPosition] = useState({ top: 0, left: 0 });
   const buttonRefs = useRef({});
+
+  const [{ isOver }, drop] = useDrop(() => ({
+    accept: 'block',
+    drop: (item) => {
+      if (item.spriteId) {
+        onRemoveBlock(item);
+      }
+    },
+    collect: (monitor) => ({
+      isOver: !!monitor.isOver(),
+    }),
+  }));
 
   // Handle adding numbered sprites
   const handleAddSprite = () => {
@@ -145,7 +156,10 @@ export default function Sidebar({ addSprite, sprites, activeSprite, setActiveSpr
   }, [selectedCategory]);
 
   return (
-    <div className="w-64 flex-none h-full overflow-y-auto flex flex-col p-4 bg-gray-50 border-r border-gray-200 shadow-sm">
+    <div
+      ref={drop}
+      className={`w-64 flex-none h-full overflow-y-auto flex flex-col p-4 bg-red-50 border-r border-gray-200 shadow-sm ${isOver ? 'bg-red-100' : ''}`}
+    >
       {/* Sprites Section */}
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-lg font-semibold text-gray-800">Sprites</h2>

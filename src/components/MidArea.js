@@ -29,7 +29,7 @@ const getBlockColor = (type) => {
   }
 };
 
-const BlockDisplay = ({ block, onUpdate, spriteId }) => {
+const BlockDisplay = ({ block, onUpdate, spriteId, index, moveBlock }) => {
   const [inputValues, setInputValues] = useState(
     block.type === 'GOTO' ? [
       block.value && typeof block.value === 'object' ? block.value.x || 0 : 0,
@@ -43,10 +43,22 @@ const BlockDisplay = ({ block, onUpdate, spriteId }) => {
 
   const [{ isDragging }, drag] = useDrag(() => ({
     type: 'block',
-    item: { ...block, spriteId },
+    item: { ...block, spriteId, index },
     collect: (monitor) => ({
       isDragging: !!monitor.isDragging(),
     }),
+  }));
+
+  const [{ isOver }, drop] = useDrop(() => ({
+    accept: 'block',
+    collect: (monitor) => ({
+      isOver: !!monitor.isOver(),
+    }),
+    hover: (item) => {
+      if (item.index === index) return;
+      moveBlock(item.index, index);
+      item.index = index;
+    },
   }));
 
   const handleInputChange = (index, value) => {
@@ -82,8 +94,8 @@ const BlockDisplay = ({ block, onUpdate, spriteId }) => {
 
   return (
     <div
-      ref={drag}
-      className={`p-2 mb-2 rounded cursor-move ${isDragging ? 'opacity-50' : ''}`}
+      ref={(node) => drag(drop(node))}
+      className={`p-2 mb-2 rounded cursor-move ${isDragging ? 'opacity-50' : ''} ${isOver ? 'border-2 border-dashed border-gray-400' : ''}`}
       style={{ backgroundColor: getBlockColor(block.type) }}
     >
       {block.type === 'GOTO' ? (
@@ -212,61 +224,54 @@ const BlockDisplay = ({ block, onUpdate, spriteId }) => {
 };
 
 export default function MidArea({ spriteId, blocks, setBlocks }) {
-  const [{ isOver, canDrop }, drop] = useDrop(() => ({
+  const [{ isOver }, drop] = useDrop(() => ({
     accept: 'block',
     drop: (item) => {
-      if (item.spriteId === spriteId) {
-        return;
-      }
-
-      setBlocks((prev) => {
-        const currentBlocks = prev[spriteId] || [];
-
-        const newBlock = {
-          ...item,
-          id: item.id || Date.now(),
-          spriteId: spriteId,
-          value: item.value || (item.type === 'GOTO' ? { x: 0, y: 0 } : item.value),
-        };
-
-        if (item.spriteId && item.id) {
-          prev[item.spriteId] = prev[item.spriteId].filter(block => block.id !== item.id);
-        }
-
-        const updatedBlocks = {
-          ...prev,
-          [spriteId]: [...currentBlocks, newBlock]
-        };
-        return updatedBlocks;
-      });
+      if (item.spriteId === spriteId) return;
+      setBlocks((prev) => ({
+        ...prev,
+        [spriteId]: [...(prev[spriteId] || []), { ...item, spriteId }],
+      }));
     },
-    canDrop: (item) => !item.spriteId || item.spriteId !== spriteId,
     collect: (monitor) => ({
       isOver: !!monitor.isOver(),
-      canDrop: !!monitor.canDrop(),
     }),
   }));
 
-  const updateBlock = (updatedBlock) => {
-    setBlocks((prev) => ({
-      ...prev,
-      [spriteId]: prev[spriteId].map((block) =>
-        block.id === updatedBlock.id ? updatedBlock : block
-      ),
-    }));
+  const moveBlock = (fromIndex, toIndex) => {
+    setBlocks((prev) => {
+      const newBlocks = [...(prev[spriteId] || [])];
+      const [removed] = newBlocks.splice(fromIndex, 1);
+      newBlocks.splice(toIndex, 0, removed);
+      return {
+        ...prev,
+        [spriteId]: newBlocks,
+      };
+    });
   };
 
   return (
     <div
       ref={drop}
-      className={`flex-1 h-full overflow-auto p-4 ${isOver && canDrop ? 'bg-blue-100' : 'bg-white'}`}
+      className={`flex-1 p-4 overflow-y-auto ${isOver ? 'bg-gray-100' : ''}`}
     >
-      {blocks[spriteId]?.map((block) => (
+      {(blocks[spriteId] || []).map((block, index) => (
         <BlockDisplay
-          key={block.id}
+          key={`${block.type}-${index}`}
           block={block}
-          onUpdate={updateBlock}
+          onUpdate={(updatedBlock) => {
+            setBlocks((prev) => {
+              const newBlocks = [...(prev[spriteId] || [])];
+              newBlocks[index] = updatedBlock;
+              return {
+                ...prev,
+                [spriteId]: newBlocks,
+              };
+            });
+          }}
           spriteId={spriteId}
+          index={index}
+          moveBlock={moveBlock}
         />
       ))}
     </div>
