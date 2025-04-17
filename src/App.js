@@ -264,12 +264,24 @@ export default function App() {
             executeForeverBlock();
           }
           return;
-        case 'STOP':
-          setIsPlaying(false);
-          if (animationTimeout) {
-            clearTimeout(animationTimeout);
-            setAnimationTimeout(null);
-          }
+        case 'DELETE_CLONE':
+          setSprites((prevSprites) => {
+            const newSprites = prevSprites.filter((s) => s.id !== sprite.id);
+            // If this was the last sprite, stop playing
+            if (newSprites.length === 0) {
+              setIsPlaying(false);
+              if (animationTimeout) {
+                clearTimeout(animationTimeout);
+                setAnimationTimeout(null);
+              }
+            }
+            return newSprites;
+          });
+          setBlocks((prevBlocks) => {
+            const newBlocks = { ...prevBlocks };
+            delete newBlocks[sprite.id];
+            return newBlocks;
+          });
           return;
         case 'REPEAT':
           console.log(`Starting repeat block for sprite ${sprite.id} with value ${block.value}`);
@@ -279,43 +291,52 @@ export default function App() {
           const executeRepeatBlock = async () => {
             if (repeatIndex < repeatValue) {
               console.log(`Repeat iteration ${repeatIndex + 1} of ${repeatValue}`);
-              const childBlocks = block.blocks || [];
+              const childBlocks = blocks[sprite.id] || [];
               let childIndex = 0;
 
               const executeNextChildBlock = async () => {
                 if (childIndex < childBlocks.length) {
                   const childBlock = childBlocks[childIndex];
-                  await executeBlock(
-                    childBlock,
-                    sprite,
-                    sprites,
-                    setSprites,
-                    childIndex,
-                    (newIndex) => {
-                      childIndex = newIndex;
-                    },
-                    () => {
-                      childIndex++;
-                      executeNextChildBlock();
-                    }
-                  );
+                  if (childBlock.type === 'REPEAT') {
+                    childIndex++;
+                    await executeNextChildBlock();
+                    return;
+                  }
+
+                  await new Promise((resolve) => {
+                    executeBlock(
+                      childBlock,
+                      sprite,
+                      sprites,
+                      setSprites,
+                      childIndex,
+                      (newIndex) => {
+                        childIndex = newIndex;
+                      },
+                      () => {
+                        childIndex++;
+                        resolve();
+                      }
+                    );
+                  });
+                  await executeNextChildBlock();
                 } else {
                   repeatIndex++;
                   if (repeatIndex < repeatValue) {
-                    executeRepeatBlock();
+                    await executeRepeatBlock();
                   } else {
                     console.log(`Completed repeat block for sprite ${sprite.id}`);
                     onComplete();
                   }
                 }
               };
-              executeNextChildBlock();
+              await executeNextChildBlock();
             } else {
               console.log(`Completed repeat block for sprite ${sprite.id}`);
               onComplete();
             }
           };
-          executeRepeatBlock();
+          await executeRepeatBlock();
           return;
         case 'WHEN_FLAG_CLICKED':
         case 'WHEN_SPRITE_CLICKED':
@@ -374,7 +395,7 @@ export default function App() {
         sprites,
         setSprites,
         blockIndex,
-        (newIndex) => {},
+        (newIndex) => { },
         () => {
           executeNextBlock(spriteId, blockIndex + 1);
         }

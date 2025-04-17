@@ -35,10 +35,10 @@ const BlockDisplay = ({ block, onUpdate, spriteId }) => {
       block.value && typeof block.value === 'object' ? block.value.x || 0 : 0,
       block.value && typeof block.value === 'object' ? block.value.y || 0 : 0
     ] :
-    block.type === 'SAY' || block.type === 'THINK' ? [block.value || ''] :
-    block.type === 'SIZE' || block.type === 'WAIT' ? [block.value || 0] :
-    block.type === 'WHEN_KEY_PRESSED' ? [block.value || 'space'] :
-    [block.value || 0]
+      block.type === 'SAY' || block.type === 'THINK' ? [block.value || ''] :
+        block.type === 'SIZE' || block.type === 'WAIT' ? [block.value || 0] :
+          block.type === 'WHEN_KEY_PRESSED' ? [block.value || 'space'] :
+            [block.value || 0]
   );
 
   const [{ isDragging }, drag] = useDrag(() => ({
@@ -117,6 +117,10 @@ const BlockDisplay = ({ block, onUpdate, spriteId }) => {
             step="1"
           />
           <span>times</span>
+        </div>
+      ) : block.type === 'DELETE_CLONE' ? (
+        <div className="flex items-center space-x-2">
+          <span>delete this clone</span>
         </div>
       ) : block.type === 'SAY' ? (
         <div className="flex items-center space-x-2">
